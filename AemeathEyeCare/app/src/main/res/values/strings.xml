@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">Aemeath Eye Care</string>
+    <string name="app_name">爱弥斯护眼</string>
+    <string name="status_idle">爱弥斯正在休息 Zzz...</string>
+    <string name="status_running">爱弥斯正在守护你的眼睛... ✨</string>
+    <string name="btn_start_text">开启守护</string>
+    <string name="btn_stop_text">结束守护</string>
+    <string name="reminder_title">✨ 爱弥斯提醒 ✨</string>
+    <string name="reminder_content">你已经连续看屏幕很久啦，\n闭上眼或者远眺一下吧！</string>
+    <string name="btn_confirm">好哒，我知道了</string>
 </resources>
