@@ -1,0 +1,48 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./AemeathEyeCare  # 关键：指定进入子文件夹
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 查看文件结构
+        run: |
+          pwd
+          ls -la
+          echo "=== 检查 gradlew ==="
+          ls -la gradlew || echo "gradlew 不存在"
+
+      - name: 设置 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 赋予 Gradlew 执行权限
+        run: chmod +x gradlew
+
+      - name: 编译 Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: 查找 APK
+        run: find . -name "*.apk" -type f
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AemeathEyeCare-APK
+          path: AemeathEyeCare/app/build/outputs/apk/debug/app-debug.apk  # 注意完整路径
