@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.aemeath.eyecare">
 
-    <!-- 获取应用使用统计权限 -->
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
-    <!-- 系统覆盖窗口权限（用于全屏提醒） -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- 前台服务权限 -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- 开机自启（可选） -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -21,27 +22,30 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.AemeathEyeCare">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- 提醒弹窗Activity -->
         <activity
             android:name=".ReminderActivity"
             android:exported="false"
             android:theme="@style/Theme.Transparent"
-            android:launchMode="singleTask"
-            android:excludeFromRecents="true" />
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
 
-        <!-- 监控服务 -->
         <service
             android:name=".ScreenMonitorService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
-    </application>
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Monitor screen usage time to protect user's eyesight from fatigue." />
+        </service>
 
+        </application>
 </manifest>
