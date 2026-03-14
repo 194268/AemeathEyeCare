@@ -1,38 +1,42 @@
-// 在 plugins 块之前，只能有 buildscript {} 或 pluginManagement {}
-// 所以这里不能有任何注释或其他语句
-
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'  // 如果有 Kotlin
+    id 'org.jetbrains.kotlin.android'
 }
 
-// 其他配置必须在 plugins 块之后
 android {
     namespace 'com.aemeath.eyecare'
     compileSdk 34
-    
+
     defaultConfig {
         applicationId "com.aemeath.eyecare"
-        minSdk 21
+        minSdk 24 // 建议提升到 24 (Android 7.0)，因为 UsageStats 在老版本兼容性较差
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-    
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    
+
     compileOptions {
+        // Android 14 建议使用 Java 17
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    
+
     kotlinOptions {
         jvmTarget = '17'
+    }
+
+    // 建议加上这个，防止因为资源冲突导致编译失败
+    buildFeatures {
+        viewBinding false // 如果你以后想用 ViewBinding 可以改成 true
     }
 }
 
@@ -41,6 +45,10 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    
+    // 必须添加：CardView 支持，用于你的提醒弹窗
+    implementation 'androidx.cardview:cardview:1.0.0'
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
