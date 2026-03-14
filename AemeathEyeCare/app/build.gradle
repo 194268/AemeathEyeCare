@@ -8,6 +8,7 @@ plugins {
 
 // 其他配置必须在 plugins 块之后
 android {
+    namespace 'com.aemeath.eyecare'
     compileSdk 34
     
     defaultConfig {
