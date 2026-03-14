@@ -36,9 +36,8 @@
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
             android:showWhenLocked="true"
-            android:turnScreenOn="true" />
-
-        <service
+            android:turnScreenOn="true"
+            android:inheritShowWhenLocked="true" /> <service
             android:name=".ScreenMonitorService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -47,5 +46,5 @@
                 android:value="Monitor screen usage time to protect user's eyesight from fatigue." />
         </service>
 
-        </application>
+    </application>
 </manifest>
