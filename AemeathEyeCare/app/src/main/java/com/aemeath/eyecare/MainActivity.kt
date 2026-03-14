@@ -35,7 +35,6 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "请先授予使用统计权限", Toast.LENGTH_SHORT).show()
                 requestUsageStatsPermission()
-()
             }
         }
 
