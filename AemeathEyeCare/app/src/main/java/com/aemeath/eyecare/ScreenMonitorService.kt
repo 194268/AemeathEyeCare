@@ -18,7 +18,7 @@ class ScreenMonitorService : Service() {
     private val NOTIFICATION_ID_REMIND = 2
     
     // 【测试建议】：将此处的 20 改为 1 即可进行快速测试
-    private val REMIND_THRESHOLD_MINS = 20 
+    private val REMIND_THRESHOLD_MINS = 1 
 
     private var sessionStartTimeMillis: Long = 0
     private var thisSessionMinutes = 0
