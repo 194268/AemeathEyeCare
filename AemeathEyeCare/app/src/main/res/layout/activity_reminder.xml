@@ -1,49 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#80000000" 
+    android:gravity="center"
+    android:orientation="vertical"
     android:padding="32dp">
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
         app:cardCornerRadius="24dp"
-        app:cardElevation="8dp"
-        app:cardBackgroundColor="#F0FFFFFF"> <LinearLayout
+        app:cardElevation="12dp">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/bg_gradient_pink"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="24dp"
-            android:gravity="center">
+            android:padding="32dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="✨ 爱弥斯提醒 ✨"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#333333"/>
+                android:text="✨ 远眺时间"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tv_content"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="你已经连续盯着屏幕很久啦，\n远眺一下窗外，给眼睛放个假吧！"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="32dp"
                 android:gravity="center"
-                android:lineSpacingExtra="4dp"
-                android:textSize="16sp"
-                android:textColor="#666666"/>
+                android:lineSpacingExtra="8dp"
+                android:text="请闭上眼或远眺\n倒计时准备中..."
+                android:textColor="#FFFFFF"
+                android:textSize="18sp" />
 
             <Button
                 android:id="@+id/btn_dismiss"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="好哒，我知道了"
-                android:backgroundTint="#4CAF50"
-                app:cornerRadius="12dp"/>
+                android:layout_height="56dp"
+                android:backgroundTint="#FFFFFF"
+                android:text="休息完毕"
+                android:textColor="#FFB7D5"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="28dp" />
+
         </LinearLayout>
     </androidx.cardview.widget.CardView>
-</FrameLayout>
+</LinearLayout>
