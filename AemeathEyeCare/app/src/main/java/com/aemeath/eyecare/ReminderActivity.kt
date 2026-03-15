@@ -1,9 +1,11 @@
 package com.aemeath.eyecare
 
 import android.content.Intent
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -16,25 +18,27 @@ class ReminderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // 必须在 setContentView 之前设置
         setShowWhenLocked(true)
         setTurnScreenOn(true)
+        
         setContentView(R.layout.activity_reminder)
 
         tvContent = findViewById(R.id.tv_content)
         btnDismiss = findViewById(R.id.btn_dismiss)
 
-        // 通知服务：进入休息状态
-        startService(Intent(this, ScreenMonitorService::class.java).apply { putExtra("CMD", "REST_START") })
+        // 1. 发送开始休息指令给 Service
+        val startIntent = Intent(this, ScreenMonitorService::class.java).apply {
+            putExtra("CMD", "REST_START")
+        }
+        startService(startIntent)
 
-        // 播放音频
-        try {
-            mediaPlayer = MediaPlayer.create(this, R.raw.music)
-            mediaPlayer?.start()
-        } catch (e: Exception) { e.printStackTrace() }
+        // 2. 播放音频逻辑 (music.mp3 放在 res/raw/music.mp3)
+        playMusic()
 
         btnDismiss.isEnabled = false
 
-        // 20秒倒计时
         object : CountDownTimer(20000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 tvContent.text = "远眺休息中，听听音乐...\n倒计时: ${millisUntilFinished / 1000}s"
@@ -44,22 +48,55 @@ class ReminderActivity : AppCompatActivity() {
                 tvContent.text = "休息完成！✨"
                 btnDismiss.isEnabled = true
                 btnDismiss.text = "完成"
-                stopMusic() // 倒计时结束自动停止
+                stopMusic()
                 
-                // 通知服务：休息结束，重置计时
-                startService(Intent(this@ReminderActivity, ScreenMonitorService::class.java).apply { putExtra("CMD", "REST_DONE") })
+                // 3. 告诉 Service 休息结束
+                val doneIntent = Intent(this@ReminderActivity, ScreenMonitorService::class.java).apply {
+                    putExtra("CMD", "REST_DONE")
+                }
+                startService(doneIntent)
             }
         }.start()
 
         btnDismiss.setOnClickListener { finish() }
     }
 
-    private fun stopMusic() {
-        mediaPlayer?.let {
-            if (it.isPlaying) it.stop()
-            it.release()
+    private fun playMusic() {
+        try {
+            // R.raw.music 对应 res/raw/music.mp3
+            mediaPlayer = MediaPlayer.create(this, R.raw.music)
+            mediaPlayer?.apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .build()
+                )
+                setOnErrorListener { _, what, extra ->
+                    Log.e("EyeCare", "Music Error: $what, $extra")
+                    false
+                }
+                start()
+            }
+        } catch (e: Exception) {
+            Log.e("EyeCare", "Play Music Failed", e)
         }
-        mediaPlayer = null
+    }
+
+    private fun stopMusic() {
+        try {
+            mediaPlayer?.let {
+                if (it.isPlaying) it.stop()
+                it.release()
+            }
+            mediaPlayer = null
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // 如果 Activity 意外被切走，也应停止音乐
+        if (isFinishing) stopMusic()
     }
 
     override fun onDestroy() {
