@@ -11,8 +11,8 @@ android {
         applicationId "com.aemeath.eyecare"
         minSdk 24 // 建议提升到 24 (Android 7.0)，因为 UsageStats 在老版本兼容性较差
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
