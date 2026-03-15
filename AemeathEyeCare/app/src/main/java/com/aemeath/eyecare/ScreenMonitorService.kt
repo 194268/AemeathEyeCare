@@ -17,8 +17,8 @@ class ScreenMonitorService : Service() {
     private val NOTIFICATION_ID_TIMER = 1
     private val NOTIFICATION_ID_REMIND = 2
     
-    // 【测试建议】：将此处的 20 改为 1 即可进行快速测试
-    private val REMIND_THRESHOLD_MINS = 1 
+    // 测试时请将此改为 1
+    private var REMIND_THRESHOLD_MINS = 1 
 
     private var sessionStartTimeMillis: Long = 0
     private var thisSessionMinutes = 0
@@ -42,7 +42,7 @@ class ScreenMonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning = true
-        resetSession() // 初始化计时基准
+        resetSession()
         createNotificationChannels()
 
         val filter = IntentFilter(ACTION_TICK)
@@ -57,12 +57,16 @@ class ScreenMonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.getStringExtra("CMD")) {
-            "REST_START" -> isResting = true
-            "REST_DONE" -> {
-                isResting = false
-                resetSession() // 休息完重新对齐时间戳
-            }
+        // 关键修复：处理来自各处的 CMD 指令
+        val cmd = intent?.getStringExtra("CMD")
+        if (cmd == "REST_START") {
+            isResting = true
+        } else if (cmd == "REST_DONE") {
+            isResting = false
+            resetSession()
+            // 休息完关闭提醒横幅
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.cancel(NOTIFICATION_ID_REMIND)
         }
         updateTimerNotification()
         return START_STICKY
@@ -71,7 +75,6 @@ class ScreenMonitorService : Service() {
     private fun resetSession() {
         val sp = getSharedPreferences("EyeCareStats", Context.MODE_PRIVATE)
         val today = getTodayDate()
-        // 自动处理零点：如果日期变了，SP 取不到值会返回 0，实现自动重置
         totalDailyMinutesAtStart = sp.getInt("minutes_$today", 0)
         sessionStartTimeMillis = System.currentTimeMillis()
         thisSessionMinutes = 0
@@ -82,67 +85,58 @@ class ScreenMonitorService : Service() {
         val isScreenOn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) pm.isInteractive else pm.isScreenOn
 
         if (isScreenOn && !isResting) {
-            // 计算自本次开始以来经过的绝对分钟数
             val elapsedMillis = System.currentTimeMillis() - sessionStartTimeMillis
             thisSessionMinutes = (elapsedMillis / (1000 * 60)).toInt()
-            
-            val currentTotal = totalDailyMinutesAtStart + thisSessionMinutes
-            saveDailyStats(currentTotal)
+            saveDailyStats(totalDailyMinutesAtStart + thisSessionMinutes)
 
             if (thisSessionMinutes >= REMIND_THRESHOLD_MINS) {
                 triggerAlert()
             }
         } else if (!isScreenOn) {
-            // 熄屏则重置本次，但不影响当日累计
             resetSession()
         }
         updateTimerNotification()
     }
 
     private fun triggerAlert() {
-        // 1. 震动提醒
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
             vibrator.vibrate(1000)
         }
-        // 2. 弹出横幅
         showHeadsUpNotification()
     }
 
     private fun scheduleNextTick() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(ACTION_TICK)
+        val intent = Intent(ACTION_TICK).setPackage(packageName)
         val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        
-        // 使用精确闹钟，1分钟后唤醒
         val triggerAt = System.currentTimeMillis() + 60 * 1000
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
-        }
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
     }
 
     private fun showHeadsUpNotification() {
         val intent = Intent(this, ReminderActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
+        // 使用不同的 RequestCode (1) 区分不同的 PendingIntent
         val pendingIntent = PendingIntent.getActivity(this, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(this, REMIND_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle("✨ 休息时间到！")
-            .setContentText("已连续用眼 ${thisSessionMinutes} 分钟，请点击休息")
+            .setContentText("已连续用眼 ${thisSessionMinutes} 分钟，点击休息")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setDefaults(Notification.DEFAULT_ALL)
-            .setFullScreenIntent(pendingIntent, true)
+            .setFullScreenIntent(pendingIntent, true) // 强制弹出的核心
             .setAutoCancel(true)
-            .build()
+            .setContentIntent(pendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID_REMIND, builder)
+        nm.notify(NOTIFICATION_ID_REMIND, builder.build())
     }
 
     private fun buildTimerNotification(): Notification {
@@ -175,15 +169,19 @@ class ScreenMonitorService : Service() {
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(NotificationChannel(TIMER_CHANNEL_ID, "计时进度", NotificationManager.IMPORTANCE_LOW))
-            manager.createNotificationChannel(NotificationChannel(REMIND_CHANNEL_ID, "到期提醒", NotificationManager.IMPORTANCE_HIGH))
+            val timerCh = NotificationChannel(TIMER_CHANNEL_ID, "计时进度", NotificationManager.IMPORTANCE_LOW)
+            val remindCh = NotificationChannel(REMIND_CHANNEL_ID, "到期提醒", NotificationManager.IMPORTANCE_HIGH).apply {
+                setBypassDnd(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            manager.createNotificationChannel(timerCh)
+            manager.createNotificationChannel(remindCh)
         }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onDestroy() {
         isRunning = false
-        try { unregisterReceiver(tickReceiver) } catch (e: Exception) {}
         super.onDestroy()
     }
 }
